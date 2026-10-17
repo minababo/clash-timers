@@ -17,6 +17,11 @@ const CATEGORY_LABELS: Readonly<Record<Village, Partial<Record<UpgradeCategory, 
   builder: { building: 'Builder', hero: 'Hero', lab: 'Star Laboratory' },
 }
 
+/** A saved village's display name: its nickname, or the player tag if it has none. */
+export function getVillageName(village: { tag: string; nickname: string | null }): string {
+  return village.nickname ?? village.tag
+}
+
 export function getCategoryLabel(village: Village, category: UpgradeCategory): string {
   // Builder Base has no Pet House; fall back to the home label if an export ever has one.
   return CATEGORY_LABELS[village][category] ?? HOME_CATEGORY_LABELS[category]

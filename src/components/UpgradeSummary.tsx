@@ -1,6 +1,7 @@
 import { getCategoryLabel } from '../lib/labels'
 import type { VillageExport } from '../lib/parser'
-import { formatDuration, formatFinishTime, secondsUntil } from '../lib/time'
+import { formatAgo, formatDuration, formatFinishTime, secondsUntil } from '../lib/time'
+import { getUpgradeStatus } from '../lib/upgradeStatus'
 
 interface UpgradeSummaryProps {
   data: VillageExport
@@ -8,26 +9,18 @@ interface UpgradeSummaryProps {
 }
 
 export function UpgradeSummary({ data, now }: UpgradeSummaryProps) {
-  const secondsSinceExport = Math.floor((now - data.exportedAt) / 1000)
-  const exportedLabel =
-    secondsSinceExport > 0
-      ? `Exported ${formatDuration(secondsSinceExport)} ago`
-      : 'Exported just now'
-
-  const next = data.upgrades.find((upgrade) => upgrade.finishesAt > now)
-  const readyCount = data.upgrades.filter((upgrade) => upgrade.finishesAt <= now).length
+  const { next, readyCount } = getUpgradeStatus(data.upgrades, now)
 
   return (
     <section
       aria-label="Summary"
       className="rounded-2xl border border-slate-800 bg-slate-900 p-4 shadow-lg shadow-black/20"
     >
-      <div className="flex items-baseline justify-between gap-3">
-        <p className="font-mono text-base font-semibold text-slate-100">{data.tag}</p>
-        <p className="text-xs text-slate-400 tabular-nums">{exportedLabel}</p>
-      </div>
+      <p className="text-xs text-slate-400 tabular-nums">
+        {formatAgo('Exported', data.exportedAt, now)}
+      </p>
 
-      <div className="mt-4 border-t border-slate-800 pt-4">
+      <div className="mt-3 border-t border-slate-800 pt-3">
         {next ? (
           <>
             <p className="text-xs font-medium tracking-wide text-slate-400 uppercase">
