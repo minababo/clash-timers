@@ -1,9 +1,30 @@
+import { useState } from 'react'
+import { PasteForm } from './components/PasteForm'
+import { VillageView } from './components/VillageView'
+import type { VillageExport } from './lib/parser'
+
 function App() {
+  const [villageExport, setVillageExport] = useState<VillageExport | null>(null)
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-slate-950 px-4 text-center">
-      <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">Clash Timers</h1>
-      <p className="mt-4 text-lg text-slate-400">Paste your village export to track upgrades.</p>
-    </main>
+    <div className="min-h-dvh bg-slate-950 text-slate-100">
+      <main className="mx-auto max-w-xl px-4 pt-6 pb-12 sm:pt-12">
+        <header className="mb-6">
+          <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
+            Clash <span className="text-amber-400">Timers</span>
+          </h1>
+          {!villageExport && (
+            <p className="mt-1 text-slate-400">Paste your village export to track upgrades.</p>
+          )}
+        </header>
+
+        {villageExport ? (
+          <VillageView data={villageExport} onReset={() => setVillageExport(null)} />
+        ) : (
+          <PasteForm onLoad={setVillageExport} />
+        )}
+      </main>
+    </div>
   )
 }
 
