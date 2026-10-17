@@ -1,7 +1,82 @@
 import { describe, expect, it } from 'vitest'
+import fixtureText from '../__fixtures__/village-export.json?raw'
 import { parseVillageExport } from './parseVillageExport'
+import type { VillageExport } from './types'
 
-// TODO: add the fixture-based tests once src/lib/__fixtures__/village-export.json is committed.
+const FIXTURE_TIMESTAMP = 1792269773
+
+function parseFixture(): VillageExport {
+  const result = parseVillageExport(fixtureText)
+  if (!result.ok) throw new Error(`expected ok, got ${result.error}`)
+  return result.data
+}
+
+describe('parseVillageExport with the village export fixture', () => {
+  it('returns the tag and export time', () => {
+    const result = parseVillageExport(fixtureText)
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.data.tag).toBe('#G8QPYCL8Q')
+    expect(result.data.exportedAt).toBe(1792269773000)
+  })
+
+  it('returns exactly 12 upgrades', () => {
+    expect(parseFixture().upgrades).toHaveLength(12)
+  })
+
+  it('counts upgrades per village and category', () => {
+    const counts: Record<string, number> = {}
+    for (const { village, category } of parseFixture().upgrades) {
+      const key = `${village}/${category}`
+      counts[key] = (counts[key] ?? 0) + 1
+    }
+    expect(counts).toEqual({
+      'home/building': 4,
+      'home/hero': 2,
+      'home/lab': 1,
+      'home/pet': 1,
+      'builder/building': 2,
+      'builder/hero': 1,
+      'builder/lab': 1,
+    })
+  })
+
+  it('puts the soonest upgrade first', () => {
+    const first = parseFixture().upgrades[0]
+    expect(first.section).toBe('buildings')
+    expect(first.dataId).toBe(1000003)
+    expect(first.secondsRemaining).toBe(37745)
+    expect(first.finishesAt).toBe((FIXTURE_TIMESTAMP + 37745) * 1000)
+  })
+
+  it('puts the latest upgrade last', () => {
+    const last = parseFixture().upgrades.at(-1)
+    expect(last?.section).toBe('buildings')
+    expect(last?.dataId).toBe(1000072)
+    expect(last?.secondsRemaining).toBe(443584)
+  })
+
+  it('sorts upgrades by finishesAt', () => {
+    const finishTimes = parseFixture().upgrades.map((u) => u.finishesAt)
+    expect(finishTimes).toEqual([...finishTimes].sort((a, b) => a - b))
+  })
+
+  it('gives every upgrade a unique id', () => {
+    const ids = parseFixture().upgrades.map((u) => u.id)
+    expect(new Set(ids).size).toBe(ids.length)
+  })
+
+  it('excludes helper_cooldown and clocktower_cooldown', () => {
+    const { upgrades } = parseFixture()
+    const sections = new Set(upgrades.map((u) => u.section))
+    expect(sections.has('helpers')).toBe(false)
+    expect(sections.has('boosts')).toBe(false)
+    // helpers[0].helper_cooldown = 22209, boosts.clocktower_cooldown = 61664
+    const seconds = upgrades.map((u) => u.secondsRemaining)
+    expect(seconds).not.toContain(22209)
+    expect(seconds).not.toContain(61664)
+  })
+})
 
 const minimalExport = {
   tag: '#TEST',
