@@ -219,7 +219,7 @@ upgrading in this export."
 
 ## 7. Deployment and rollback
 
-Production URL: `<production URL>`
+Production URL: https://clash-timers.vercel.app
 
 ### How it works
 
@@ -245,15 +245,15 @@ Production URL: `<production URL>`
 
 ### Verify a deploy
 
-1. Open `<production URL>`.
+1. Open https://clash-timers.vercel.app.
 2. Check the footer: `Version <SHA>` must match the merge commit on `main` (`git log -1 origin/main`),
    with no `(preview)`.
 3. Paste an export and check that villages, names and countdowns work.
 4. Check the caching headers, using the real file name from `index.html`:
 
    ```sh
-   curl -sI <production URL>/ | grep -i cache-control
-   curl -sI <production URL>/assets/<file>.js | grep -i cache-control
+   curl -sI https://clash-timers.vercel.app/ | grep -i cache-control
+   curl -sI https://clash-timers.vercel.app/assets/<file>.js | grep -i cache-control
    ```
 
    Expect `no-cache` for `/`, and `public, max-age=31536000, immutable` for `/assets/`.

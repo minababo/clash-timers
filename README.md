@@ -89,7 +89,7 @@ one `powershell` process only; it doesn't change your system's execution policy.
 
 ## Deployment
 
-Live: `<production URL>`
+Live: https://clash-timers.vercel.app
 
 The app is deployed on Vercel through its Git integration. Merging into `main` deploys to
 production, and every other branch and pull request gets its own preview deployment. The footer
