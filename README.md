@@ -87,6 +87,15 @@ Windows blocks unsigned PowerShell scripts by default. `-ExecutionPolicy Bypass`
 one `powershell` process only; it doesn't change your system's execution policy. Run
 `Get-Help scripts/check.ps1 -Full` (or `scripts/update-names.ps1`) for the built-in help.
 
+## Deployment
+
+Live: `<production URL>`
+
+The app is deployed on Vercel through its Git integration. Merging into `main` deploys to
+production, and every other branch and pull request gets its own preview deployment. The footer
+shows the deployed commit (`Version <short SHA>`, with `(preview)` on preview builds). Release and
+rollback steps are in [RUNBOOK.md](RUNBOOK.md#7-deployment-and-rollback).
+
 ## Run with Docker
 
 Builds the site and serves it with nginx on port 8080. Needs Docker Desktop (or another Docker

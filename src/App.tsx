@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { BackButton } from './components/BackButton'
 import { PasteForm } from './components/PasteForm'
+import { VersionFooter } from './components/VersionFooter'
 import { VillageList } from './components/VillageList'
 import { VillageView } from './components/VillageView'
 import { getVillageName } from './lib/labels'
@@ -85,6 +86,8 @@ function App() {
         </header>
 
         {content}
+
+        <VersionFooter />
       </main>
     </div>
   )
