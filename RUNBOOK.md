@@ -374,9 +374,28 @@ issue should appear in Sentry with environment `preview`.
 
 ### Uptime monitoring
 
-- Monitor: `<uptime monitor>`
-- Checks: `<uptime monitor>`
-- Alerts go to: `<uptime monitor>`
+- **Monitor:** UptimeRobot (free plan), a keyword monitor named "Keyword on clash-timers.vercel.app".
+  Find it in the UptimeRobot dashboard under **Monitoring**.
+- **Checks:**
+  - every 5 minutes: `GET https://clash-timers.vercel.app`, following redirects
+  - **down** when the response isn't 2xx/3xx, takes over 30 seconds, or the HTML doesn't contain
+    `Clash Timers` (not case-sensitive)
+- **Alerts go to:** email to the repo owner, sent as soon as an incident starts, with no repeats.
+  SSL and domain expiry checks aren't enabled; they're not on the free plan.
+- **Limits:**
+  - The check reads the static `index.html` (its `<title>`). It doesn't run the JavaScript, so it
+    catches "site down" or "wrong page", not a broken app. Crashes show up in Sentry instead.
+  - The check runs from one location, so a short regional outage can be missed.
+
+**When a down alert arrives:**
+
+1. Open https://clash-timers.vercel.app and check whether it loads and shows the app.
+2. Check the latest production deployment in Vercel: did it build, and did it go out just before the
+   alert?
+3. If the latest release broke it, roll back first (see
+   [Deployment and rollback](#7-deployment-and-rollback)), then investigate.
+4. If nothing was deployed, check Vercel's status page. Then wait for UptimeRobot's recovery
+   email or the next successful check.
 
 ### Other logs
 
