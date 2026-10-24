@@ -11,7 +11,7 @@ COPY . .
 RUN npm run build
 
 # Serve stage: unprivileged nginx (runs as a non-root user, listens on 8080).
-FROM nginxinc/nginx-unprivileged:1.30.6-alpine3.24
+FROM nginxinc/nginx-unprivileged:1.31.7-alpine3.24
 
 LABEL org.opencontainers.image.title="Clash Timers" \
       org.opencontainers.image.description="Paste a Clash of Clans village export and track upgrade countdowns. Static site served by nginx." \
