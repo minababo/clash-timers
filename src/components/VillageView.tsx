@@ -1,7 +1,9 @@
 import { useId, useState, type FormEvent } from 'react'
+import { buildUpgradeCalendar, calendarFilename, downloadFile } from '../lib/calendar'
 import { getVillageName } from '../lib/labels'
 import type { ParsedVillage } from '../lib/storage'
 import { useNow } from '../lib/time'
+import { getUpgradeStatus } from '../lib/upgradeStatus'
 import { BackButton } from './BackButton'
 import {
   DANGER_BUTTON,
@@ -34,6 +36,23 @@ export function VillageView({
   const [isRenaming, setIsRenaming] = useState(false)
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false)
   const name = getVillageName(village)
+  const calendarHintId = useId()
+  const hasRunning = getUpgradeStatus(village.data.upgrades, now).next !== undefined
+
+  function handleAddToCalendar() {
+    const exportTime = Date.now()
+    const ics = buildUpgradeCalendar({
+      villageLabel: name,
+      tag: village.tag,
+      upgrades: village.data.upgrades,
+      now: exportTime,
+    })
+    downloadFile(
+      ics,
+      calendarFilename(name, village.tag, exportTime),
+      'text/calendar;charset=utf-8',
+    )
+  }
 
   return (
     <div className="space-y-4">
@@ -80,6 +99,23 @@ export function VillageView({
       <UpgradeList upgrades={village.data.upgrades} now={now} />
 
       <div className="space-y-3 pt-2">
+        <div className="space-y-2">
+          <button
+            type="button"
+            onClick={handleAddToCalendar}
+            disabled={!hasRunning}
+            aria-describedby={calendarHintId}
+            className={`${PRIMARY_BUTTON} w-full`}
+          >
+            Add to Calendar
+          </button>
+          <p id={calendarHintId} className="px-1 text-xs text-slate-400">
+            {hasRunning
+              ? 'Adds an alarm for each running upgrade. Add from one device only. Adding again creates duplicates, so delete the old events first.'
+              : 'Nothing is upgrading right now.'}
+          </p>
+        </div>
+
         <button type="button" onClick={onUpdate} className={`${SECONDARY_BUTTON} w-full`}>
           Update this village
         </button>
