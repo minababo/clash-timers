@@ -52,7 +52,8 @@ can save several villages and export running upgrades as calendar events.
 
 ## 3. Running locally
 
-1. Use the Node major version in `.nvmrc`, e.g. `nvm use`.
+1. Use the Node major version in `.nvmrc` (24): `nvm use 24` with nvm-windows, or `nvm use` with
+   nvm on macOS/Linux.
 2. Install: `npm ci`.
 3. Start the dev server: `npm run dev`, then open the printed Local URL.
 4. To test on a phone, run `npm run dev -- --host` and open the printed Network URL on the phone.
@@ -65,13 +66,17 @@ in `node_modules`, so `npm ci` fails with `EPERM` after it has already deleted m
 ## 4. CI
 
 **What and when:** `.github/workflows/ci.yml` runs on every pull request, and on every push to `dev`
-and `main`. It has one job, `checks`, with these steps:
+and `main`. It has one job, `checks`, with these steps (the names shown in the Actions tab):
 
-1. Install dependencies (`npm ci`)
-2. Lint (`npm run lint`)
-3. Check formatting (`npm run format:check`)
-4. Test (`npm run test`)
-5. Build (`npm run build`)
+1. Check out code
+2. Set up Node (version from `.nvmrc`, with the npm cache)
+3. Install dependencies (`npm ci`)
+4. Lint (`npm run lint`)
+5. Check formatting (`npm run format:check`)
+6. Test (`npm run test`)
+7. Build (`npm run build`)
+
+GitHub also adds its own "Set up job", "Post ..." and "Complete job" steps.
 
 A newer push to the same PR or branch cancels the run in progress.
 
