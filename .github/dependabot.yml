@@ -1,0 +1,47 @@
+# Dependabot version updates. PRs go to dev, like every other change.
+# Security updates are separate: GitHub always opens them against the default branch (also dev),
+# and the options below (groups, labels, prefixes) don't apply to them.
+# Docs: https://docs.github.com/en/code-security/dependabot/working-with-dependabot/dependabot-options-reference
+version: 2
+updates:
+  - package-ecosystem: 'npm'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+    target-branch: 'dev'
+    open-pull-requests-limit: 5
+    labels:
+      - 'dependencies'
+    commit-message:
+      prefix: 'chore(deps)'
+    # Minor and patch updates in one PR; anything that doesn't match (majors) gets its own PR.
+    groups:
+      npm-minor-and-patch:
+        update-types:
+          - 'minor'
+          - 'patch'
+
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+    target-branch: 'dev'
+    labels:
+      - 'dependencies'
+    commit-message:
+      prefix: 'ci(deps)'
+    groups:
+      github-actions:
+        patterns:
+          - '*'
+
+  # Base images in the Dockerfile (node and nginx-unprivileged).
+  - package-ecosystem: 'docker'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+    target-branch: 'dev'
+    labels:
+      - 'dependencies'
+    commit-message:
+      prefix: 'build(deps)'

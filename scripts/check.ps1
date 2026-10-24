@@ -1,10 +1,11 @@
 <#
 .SYNOPSIS
-    Runs the same checks as CI: lint, format check, tests and build.
+    Runs the same checks as CI: production audit, lint, format check, tests and build.
 
 .DESCRIPTION
-    Runs the project's npm scripts in CI order (lint, format:check, test, build) from the repo
-    root, wherever the script is called from. Each step's output is shown as it runs, followed by
+    Runs the same steps as CI, in CI order (npm audit --omit=dev --audit-level=high, then the
+    lint, format:check, test and build npm scripts) from the repo root, wherever the script is
+    called from. Each step's output is shown as it runs, followed by
     a summary table with PASS/FAIL/SKIPPED and the duration of each step.
 
     Before running anything it checks that node and npm are installed, that the Node major
@@ -117,11 +118,13 @@ try {
     Write-Line ("Node {0}, npm {1}" -f $foundRaw, (& $npm.Source -v | Out-String).Trim()) DarkGray
 
     # --- Steps (same order as .github/workflows/ci.yml) -----------------------------------------
+    # Each step is the npm arguments to run. Audit matches CI's blocking production audit.
     $steps = @(
-        @{ Name = 'Lint'; Script = 'lint' },
-        @{ Name = 'Format'; Script = 'format:check' },
-        @{ Name = 'Test'; Script = 'test' },
-        @{ Name = 'Build'; Script = 'build' }
+        @{ Name = 'Audit'; Args = @('audit', '--omit=dev', '--audit-level=high') },
+        @{ Name = 'Lint'; Args = @('run', 'lint') },
+        @{ Name = 'Format'; Args = @('run', 'format:check') },
+        @{ Name = 'Test'; Args = @('run', 'test') },
+        @{ Name = 'Build'; Args = @('run', 'build') }
     )
     $results = New-Object System.Collections.Generic.List[object]
     $stopped = $false
@@ -134,9 +137,9 @@ try {
         }
 
         Write-Line ''
-        Write-Line ("==> {0}: npm run {1}" -f $step.Name, $step.Script) Cyan
+        Write-Line ("==> {0}: npm {1}" -f $step.Name, ($step.Args -join ' ')) Cyan
         $timer = [System.Diagnostics.Stopwatch]::StartNew()
-        & $npm.Source run $step.Script
+        & $npm.Source @($step.Args)
         $stepExit = $LASTEXITCODE
         $timer.Stop()
 
