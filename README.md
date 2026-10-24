@@ -87,6 +87,24 @@ Windows blocks unsigned PowerShell scripts by default. `-ExecutionPolicy Bypass`
 one `powershell` process only; it doesn't change your system's execution policy. Run
 `Get-Help scripts/check.ps1 -Full` (or `scripts/update-names.ps1`) for the built-in help.
 
+## Run with Docker
+
+Builds the site and serves it with nginx on port 8080. Needs Docker Desktop (or another Docker
+engine) running.
+
+```sh
+docker compose up --build
+```
+
+Open http://localhost:8080. To stop and remove the container:
+
+```sh
+docker compose down
+```
+
+Saved villages are stored per address, so villages saved on the dev server (`localhost:5173`) won't
+appear on `localhost:8080`. See [RUNBOOK.md](RUNBOOK.md#4-container) for health checks and logs.
+
 ## Credits
 
 Game data (upgrade names) comes from
