@@ -22,7 +22,21 @@ const SECTION_NAMES: Readonly<Record<string, { group: NameGroup; noun: string }>
  * for IDs missing from the data. Never throws.
  */
 export function getUpgradeName(dataId: number, section: string): string {
-  const source = Object.hasOwn(SECTION_NAMES, section) ? SECTION_NAMES[section] : undefined
-  const name = source ? UPGRADE_NAMES[source.group][dataId] : undefined
-  return name ?? `Unknown ${source?.noun ?? 'item'} #${dataId}`
+  return (
+    findUpgradeName(dataId, section) ?? `Unknown ${getSource(section)?.noun ?? 'item'} #${dataId}`
+  )
+}
+
+/** Whether `getUpgradeName` has a real name for this ID (false means it shows "Unknown ..."). */
+export function hasUpgradeName(dataId: number, section: string): boolean {
+  return findUpgradeName(dataId, section) !== undefined
+}
+
+function getSource(section: string) {
+  return Object.hasOwn(SECTION_NAMES, section) ? SECTION_NAMES[section] : undefined
+}
+
+function findUpgradeName(dataId: number, section: string): string | undefined {
+  const source = getSource(section)
+  return source ? UPGRADE_NAMES[source.group][dataId] : undefined
 }
