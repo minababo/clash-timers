@@ -11,7 +11,8 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "generate:names": "node scripts/generate-upgrade-names.mjs",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "check": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/check.ps1"
   },
   "dependencies": {
     "react": "^19.2.8",
