@@ -1,4 +1,5 @@
-import { getCategoryLabel } from '../lib/labels'
+import { formatLevel, getCategoryLabel } from '../lib/labels'
+import { getUpgradeName } from '../lib/names'
 import type { VillageExport } from '../lib/parser'
 import { formatAgo, formatDuration, formatFinishTime, secondsUntil } from '../lib/time'
 import { getUpgradeStatus } from '../lib/upgradeStatus'
@@ -32,7 +33,7 @@ export function UpgradeSummary({ data, now }: UpgradeSummaryProps) {
                   {getCategoryLabel(next.village, next.category)}
                 </p>
                 <p className="truncate text-sm text-slate-400">
-                  #{next.dataId} · Lv {next.level}
+                  {getUpgradeName(next.dataId, next.section)} · {formatLevel(next.level, false)}
                 </p>
               </div>
               <div className="shrink-0 text-right">
