@@ -1,6 +1,7 @@
 import { useId, useState, type FormEvent } from 'react'
 import { buildUpgradeCalendar, calendarFilename, downloadFile } from '../lib/calendar'
 import { getVillageName } from '../lib/labels'
+import { useReportUnknownUpgrades } from '../lib/monitoring'
 import type { ParsedVillage } from '../lib/storage'
 import { useNow } from '../lib/time'
 import { getUpgradeStatus } from '../lib/upgradeStatus'
@@ -33,6 +34,7 @@ export function VillageView({
   onDelete,
 }: VillageViewProps) {
   const now = useNow()
+  useReportUnknownUpgrades(village.data.upgrades)
   const [isRenaming, setIsRenaming] = useState(false)
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false)
   const name = getVillageName(village)

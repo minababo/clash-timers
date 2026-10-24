@@ -1,1 +1,1 @@
-export { getUpgradeName } from './getUpgradeName'
+export { getUpgradeName, hasUpgradeName } from './getUpgradeName'

@@ -89,7 +89,7 @@ one `powershell` process only; it doesn't change your system's execution policy.
 
 ## Deployment
 
-Live: `<production URL>`
+Live: https://clash-timers.vercel.app
 
 The app is deployed on Vercel through its Git integration. Merging into `main` deploys to
 production, and every other branch and pull request gets its own preview deployment. The footer
@@ -113,6 +113,11 @@ docker compose down
 
 Saved villages are stored per address, so villages saved on the dev server (`localhost:5173`) won't
 appear on `localhost:8080`. See [RUNBOOK.md](RUNBOOK.md#4-container) for health checks and logs.
+
+## Privacy
+
+Saved villages stay in your browser. The deployed app reports errors to Sentry, but error reports
+contain no export data and no player tags.
 
 ## Credits
 

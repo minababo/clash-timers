@@ -18,5 +18,8 @@
       "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
     }
   ],
-  "rewrites": [{ "source": "/((?!assets/).*)", "destination": "/index.html" }]
+  "rewrites": [
+    { "source": "/monitoring", "destination": "/api/monitoring" },
+    { "source": "/((?!assets/).*)", "destination": "/index.html" }
+  ]
 }

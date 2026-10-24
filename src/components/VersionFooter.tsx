@@ -26,7 +26,23 @@ export function VersionFooter({ commit = __APP_COMMIT__, env = __APP_ENV__ }: Ve
       ) : (
         <span className="font-mono">{commit}</span>
       )}
-      {env === 'preview' && ' (preview)'}
+      {env === 'preview' && (
+        <>
+          {' (preview) · '}
+          <button
+            type="button"
+            onClick={throwTestError}
+            className="underline decoration-slate-700 underline-offset-2 hover:text-slate-300"
+          >
+            Send test error
+          </button>
+        </>
+      )}
     </footer>
   )
+}
+
+/** Preview builds only: an uncaught error, to check that Sentry receives reports. */
+function throwTestError(): never {
+  throw new Error('Clash Timers test error (preview build)')
 }
