@@ -38,17 +38,23 @@ can save several villages and export running upgrades as calendar events.
 | Production build           | `npm run build` (output in `dist/`)                                 |
 | Regenerate upgrade names   | `npm run generate:names`                                            |
 | Regenerate and report diff | `powershell -ExecutionPolicy Bypass -File scripts/update-names.ps1` |
+| Build and run in Docker    | `docker compose up --build` (then open http://localhost:8080)       |
+| Stop the container         | `docker compose down`                                               |
 
-| File                                       | What it is                                          |
-| ------------------------------------------ | --------------------------------------------------- |
-| `.github/workflows/ci.yml`                 | CI pipeline                                         |
-| `.nvmrc`                                   | Node major version (24), used by CI and `check.ps1` |
-| `scripts/check.ps1`                        | Runs the CI checks locally                          |
-| `scripts/update-names.ps1`                 | Regenerates names and reports whether they changed  |
-| `src/lib/storage/villageStorage.ts`        | Storage key, data shape, memory fallback            |
-| `src/lib/parser/parseVillageExport.ts`     | Export parser                                       |
-| `src/lib/names/upgradeNames.generated.ts`  | Generated upgrade names (do not edit by hand)       |
-| `src/lib/__fixtures__/village-export.json` | Real export used by tests (do not modify)           |
+| File                                       | What it is                                              |
+| ------------------------------------------ | ------------------------------------------------------- |
+| `.github/workflows/ci.yml`                 | CI pipeline                                             |
+| `.nvmrc`                                   | Node major version (24), used by CI and `check.ps1`     |
+| `scripts/check.ps1`                        | Runs the CI checks locally                              |
+| `scripts/update-names.ps1`                 | Regenerates names and reports whether they changed      |
+| `Dockerfile`                               | Image: Node build stage, unprivileged nginx serve stage |
+| `docker/nginx.conf`                        | nginx config: `/healthz`, caching, headers, fallback    |
+| `docker-compose.yml`                       | Local run: service `web` on port 8080                   |
+| `.dockerignore`                            | Allowlist of files sent to the image build              |
+| `src/lib/storage/villageStorage.ts`        | Storage key, data shape, memory fallback                |
+| `src/lib/parser/parseVillageExport.ts`     | Export parser                                           |
+| `src/lib/names/upgradeNames.generated.ts`  | Generated upgrade names (do not edit by hand)           |
+| `src/lib/__fixtures__/village-export.json` | Real export used by tests (do not modify)               |
 
 ## 3. Running locally
 
@@ -63,10 +69,32 @@ can save several villages and export running upgrades as calendar events.
 in `node_modules`, so `npm ci` fails with `EPERM` after it has already deleted most of
 `node_modules`. Stop the server, then run `npm ci` again.
 
-## 4. CI
+## 4. Container
+
+The `Dockerfile` builds the site with Node, then serves `dist/` with unprivileged nginx. nginx runs
+as user `nginx` (uid 101) and listens on port 8080. Docker Desktop must be running.
+
+1. **Build and run:** `docker compose up --build -d` (leave out `-d` to stay attached). Open
+   http://localhost:8080.
+2. **Check health:**
+   - `docker ps` shows `(healthy)` in the STATUS column after a few seconds.
+   - `curl http://localhost:8080/healthz` returns `ok`.
+   - The container checks `/healthz` itself every 30 seconds.
+3. **View logs:** `docker compose logs web` (add `-f` to follow). `/healthz` requests aren't logged.
+4. **Stop:** `docker compose down`.
+
+Saved villages are per address, so villages saved on `localhost:5173` (the dev server) don't appear
+on `localhost:8080`.
+
+## 5. CI
 
 **What and when:** `.github/workflows/ci.yml` runs on every pull request, and on every push to `dev`
-and `main`. It has one job, `checks`, with these steps (the names shown in the Actions tab):
+and `main`. It has two jobs, which run in parallel.
+
+**`docker`** builds the image with `docker/build-push-action`. It doesn't push the image anywhere,
+and it caches layers in the GitHub Actions cache.
+
+**`checks`** has these steps (the names shown in the Actions tab):
 
 1. Check out code
 2. Set up Node (version from `.nvmrc`, with the npm cache)
@@ -81,7 +109,7 @@ GitHub also adds its own "Set up job", "Post ..." and "Complete job" steps.
 A newer push to the same PR or branch cancels the run in progress.
 
 **Required status:** repository rulesets on `dev` and `main` require a pull request, and require the
-`checks` status to pass before merging.
+`checks` status to pass before merging. The `docker` job runs on every PR too, but isn't required.
 
 **Find the failing step:**
 
@@ -107,7 +135,7 @@ calling the script directly:
 | Install dependencies       | `package-lock.json` out of sync with `package.json` | `npm install`, then commit `package-lock.json`                  |
 | Any (only on your machine) | Local Node major differs from `.nvmrc`              | Switch Node versions. `npm run check` reports expected vs found |
 
-## 5. Troubleshooting
+## 6. Troubleshooting
 
 ### Timers are wrong or off
 
@@ -188,18 +216,20 @@ calling the script directly:
 A valid export with nothing upgrading loads without an error. Its summary says "Nothing is
 upgrading in this export."
 
-## 6. Deployment and rollback
+## 7. Deployment and rollback
 
 Not set up yet. Added in the deployment issue.
 
-## 7. Monitoring and logs
+## 8. Monitoring and logs
 
 - **What exists today:**
   - **Browser console** (DevTools). The app logs nothing on purpose, so this only shows browser and
     runtime errors.
-  - **CI logs** in the GitHub Actions tab (see [CI](#4-ci)).
+  - **CI logs** in the GitHub Actions tab (see [CI](#5-ci)).
+  - **Container logs** when running locally in Docker: `docker compose logs web` (see
+    [Container](#4-container)).
 - **Uptime monitoring and error reporting:** not set up yet. Added in the monitoring issue.
 
-## 8. Incident notes
+## 9. Incident notes
 
 Postmortems will live in `docs/` (the folder doesn't exist yet).

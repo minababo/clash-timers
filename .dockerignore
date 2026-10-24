@@ -1,0 +1,18 @@
+# Allowlist: ignore everything, then re-include only what the image build needs.
+*
+
+# npm ci
+!package.json
+!package-lock.json
+
+# npm run build (tsc -b && vite build)
+!index.html
+!tsconfig.json
+!tsconfig.app.json
+!tsconfig.node.json
+!vite.config.ts
+!src/
+!public/
+
+# Serve stage
+!docker/nginx.conf
