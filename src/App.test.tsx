@@ -266,6 +266,93 @@ describe('App', () => {
       expect(screen.getByText('1 upgrade is ready')).toBeInTheDocument()
     })
   })
+
+  describe('Add to Calendar', () => {
+    const BLOB_URL = 'blob:clash-timers-test'
+    const createObjectURL = vi.fn<(blob: Blob) => string>(() => BLOB_URL)
+    const revokeObjectURL = vi.fn<(url: string) => void>()
+    const downloadedNames: string[] = []
+
+    beforeEach(() => {
+      // jsdom implements neither of these.
+      URL.createObjectURL = createObjectURL
+      URL.revokeObjectURL = revokeObjectURL
+      vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (
+        this: HTMLAnchorElement,
+      ) {
+        downloadedNames.push(this.download)
+      })
+    })
+
+    afterEach(() => {
+      Reflect.deleteProperty(URL, 'createObjectURL')
+      Reflect.deleteProperty(URL, 'revokeObjectURL')
+      createObjectURL.mockClear()
+      revokeObjectURL.mockClear()
+      downloadedNames.length = 0
+      vi.restoreAllMocks()
+    })
+
+    it('downloads a calendar file with an event per running upgrade', async () => {
+      render(<App />)
+      pasteAndLoad(fixtureText)
+
+      const button = screen.getByRole('button', { name: 'Add to Calendar' })
+      expect(button).toBeEnabled()
+      expect(button).toHaveAccessibleDescription(
+        'Adds an alarm for each running upgrade. Add from one device only. Adding again creates duplicates, so delete the old events first.',
+      )
+      fireEvent.click(button)
+
+      expect(createObjectURL).toHaveBeenCalledTimes(1)
+      const blob = createObjectURL.mock.calls[0][0]
+      expect(blob).toBeInstanceOf(Blob)
+      expect(blob.type).toBe('text/calendar;charset=utf-8')
+      const ics = await blob.text()
+      expect(ics.startsWith('BEGIN:VCALENDAR\r\n')).toBe(true)
+      expect(ics.match(/BEGIN:VEVENT/g)).toHaveLength(12)
+      expect(ics).toContain('SUMMARY:#G8QPYCL8Q: Elixir Storage Lv 16 ready')
+
+      expect(downloadedNames).toHaveLength(1)
+      expect(downloadedNames[0]).toMatch(/^clash-timers-G8QPYCL8Q-\d{4}-\d{2}-\d{2}\.ics$/)
+      expect(document.querySelector('a[download]')).toBeNull()
+
+      expect(revokeObjectURL).not.toHaveBeenCalled()
+      act(() => vi.advanceTimersByTime(1000))
+      expect(revokeObjectURL).toHaveBeenCalledWith(BLOB_URL)
+    })
+
+    it('uses the nickname in the summaries and filename', async () => {
+      render(<App />)
+      pasteAndLoad(fixtureText)
+      click(`Rename ${TAG}`)
+      fireEvent.change(screen.getByLabelText('Nickname'), { target: { value: 'Main, alt' } })
+      click('Save')
+
+      click('Add to Calendar')
+
+      const ics = await createObjectURL.mock.calls[0][0].text()
+      expect(ics).toContain('SUMMARY:Main\\, alt: Elixir Storage Lv 16 ready')
+      expect(downloadedNames[0]).toMatch(/^clash-timers-Main-alt-\d{4}-\d{2}-\d{2}\.ics$/)
+    })
+
+    it('is disabled with a note when nothing is running', () => {
+      render(<App />)
+      pasteAndLoad(fixtureText)
+
+      // The last fixture upgrade (Spell Tower) finishes 443584s after export.
+      act(() => {
+        vi.setSystemTime(EXPORTED_AT + 443_584_000 - 1_000)
+        vi.advanceTimersByTime(1000)
+      })
+
+      const button = screen.getByRole('button', { name: 'Add to Calendar' })
+      expect(button).toBeDisabled()
+      expect(button).toHaveAccessibleDescription('Nothing is upgrading right now.')
+      fireEvent.click(button)
+      expect(createObjectURL).not.toHaveBeenCalled()
+    })
+  })
 })
 
 /** From an open village: back to the list, then add another export. */
