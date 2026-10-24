@@ -1,6 +1,7 @@
 import * as Sentry from '@sentry/react'
 import type { ParseErrorCode } from '../parser'
 import { scrubEvent } from './scrubEvent'
+import { TUNNEL_PATH } from './tunnel'
 
 /**
  * Starts Sentry error reporting, but only when a DSN was provided at build time
@@ -15,6 +16,9 @@ export function initMonitoring(dsn: string | undefined = import.meta.env.VITE_SE
     environment: __APP_ENV__,
     // Matches the version in the footer.
     release: __APP_COMMIT__,
+    // Same-origin endpoint (a Vercel Function) instead of *.ingest.sentry.io, which ad blockers
+    // and Brave Shields block. Only DSN builds use it, and only Vercel builds have a DSN.
+    tunnel: TUNNEL_PATH,
     // Sentry 11 replaced `sendDefaultPii` with `dataCollection`, whose defaults collect.
     // Turn every category off (the equivalent of sendDefaultPii: false, and stricter).
     dataCollection: {

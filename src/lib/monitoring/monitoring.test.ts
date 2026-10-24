@@ -36,6 +36,7 @@ describe('initMonitoring', () => {
       dsn: 'https://key@o0.ingest.sentry.io/1',
       environment: 'local',
       release: 'local',
+      tunnel: '/monitoring',
       dataCollection: {
         userInfo: false,
         cookies: false,

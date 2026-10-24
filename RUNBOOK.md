@@ -41,22 +41,23 @@ can save several villages and export running upgrades as calendar events.
 | Build and run in Docker    | `docker compose up --build` (then open http://localhost:8080)       |
 | Stop the container         | `docker compose down`                                               |
 
-| File                                       | What it is                                              |
-| ------------------------------------------ | ------------------------------------------------------- |
-| `.github/workflows/ci.yml`                 | CI pipeline                                             |
-| `.nvmrc`                                   | Node major version (24), used by CI and `check.ps1`     |
-| `scripts/check.ps1`                        | Runs the CI checks locally                              |
-| `scripts/update-names.ps1`                 | Regenerates names and reports whether they changed      |
-| `vercel.json`                              | Vercel response headers and `index.html` fallback       |
-| `Dockerfile`                               | Image: Node build stage, unprivileged nginx serve stage |
-| `docker/nginx.conf`                        | nginx config: `/healthz`, caching, headers, fallback    |
-| `docker-compose.yml`                       | Local run: service `web` on port 8080                   |
-| `.dockerignore`                            | Allowlist of files sent to the image build              |
-| `src/lib/storage/villageStorage.ts`        | Storage key, data shape, memory fallback                |
-| `src/lib/monitoring/`                      | Sentry setup, event scrubbing, parse/unknown-ID reports |
-| `src/lib/parser/parseVillageExport.ts`     | Export parser                                           |
-| `src/lib/names/upgradeNames.generated.ts`  | Generated upgrade names (do not edit by hand)           |
-| `src/lib/__fixtures__/village-export.json` | Real export used by tests (do not modify)               |
+| File                                       | What it is                                                   |
+| ------------------------------------------ | ------------------------------------------------------------ |
+| `.github/workflows/ci.yml`                 | CI pipeline                                                  |
+| `.nvmrc`                                   | Node major version (24), used by CI and `check.ps1`          |
+| `scripts/check.ps1`                        | Runs the CI checks locally                                   |
+| `scripts/update-names.ps1`                 | Regenerates names and reports whether they changed           |
+| `vercel.json`                              | Vercel headers, Sentry tunnel rewrite, `index.html` fallback |
+| `api/monitoring.ts`                        | Vercel Function behind the Sentry tunnel (`/monitoring`)     |
+| `Dockerfile`                               | Image: Node build stage, unprivileged nginx serve stage      |
+| `docker/nginx.conf`                        | nginx config: `/healthz`, caching, headers, fallback         |
+| `docker-compose.yml`                       | Local run: service `web` on port 8080                        |
+| `.dockerignore`                            | Allowlist of files sent to the image build                   |
+| `src/lib/storage/villageStorage.ts`        | Storage key, data shape, memory fallback                     |
+| `src/lib/monitoring/`                      | Sentry setup, event scrubbing, parse/unknown-ID reports      |
+| `src/lib/parser/parseVillageExport.ts`     | Export parser                                                |
+| `src/lib/names/upgradeNames.generated.ts`  | Generated upgrade names (do not edit by hand)                |
+| `src/lib/__fixtures__/village-export.json` | Real export used by tests (do not modify)                    |
 
 ## 3. Running locally
 
@@ -224,8 +225,9 @@ Production URL: https://clash-timers.vercel.app
 
 ### How it works
 
-- **Vercel Git integration.** Vercel builds the repo on its own; `vercel.json` only sets response
-  headers and the fallback to `index.html`. Vercel detects Vite, so there's no build command in it.
+- **Vercel Git integration.** Vercel builds the repo on its own. `vercel.json` sets the response
+  headers, the Sentry tunnel rewrite (`/monitoring` to the `api/monitoring.ts` function) and the
+  fallback to `index.html`. Vercel detects Vite, so there's no build command in it.
 - **Production is `main`.** Every merge to `main` creates a production deployment. To check or
   change the branch: **Project Settings > Environments > Production > Branch Tracking**.
 - **Every other branch gets a preview.** Each push to any other branch, `dev` included, gets its
@@ -305,6 +307,21 @@ no DSN and send nothing. Each event carries:
 - **environment:** `production` or `preview`
 - **release:** the short commit SHA, the same value as `Version <SHA>` in the footer
 
+**Tunnel (why reports go to `/monitoring`):**
+
+- **Why it exists:** ad blockers, including Brave Shields, block requests to
+  `*.ingest.sentry.io`, so errors from those users never arrived. The SDK therefore sends reports to
+  the same-origin path `/monitoring` instead. `vercel.json` rewrites that path to the Vercel
+  Function `api/monitoring.ts`, which forwards the reports to Sentry.
+- **What the function forwards:**
+  - Only envelopes whose DSN matches `VITE_SENTRY_DSN` exactly: same host, project and key.
+  - Only to that DSN's own ingest URL, never to a URL taken from the request.
+  - Not the visitor's IP or headers.
+  - Bodies over 200 kB are refused.
+- **Where it's tested:** the logic is in `src/lib/monitoring/tunnel.ts`, and its tests are next to
+  it.
+- **Docker and local builds** have no DSN, so they never use the tunnel.
+
 **What it captures:**
 
 | Event                          | Level     | Details sent                                                           |
@@ -368,6 +385,12 @@ issue should appear in Sentry with environment `preview`.
 - **CI logs** in the GitHub Actions tab (see [CI](#5-ci)).
 - **Vercel build logs:** Vercel > Deployments > a deployment > **Build Logs**. Source map upload
   errors appear here.
+- **Tunnel function logs:** if events stop arriving in Sentry, check the project's runtime logs in
+  Vercel for requests to `/api/monitoring`. The statuses mean:
+  - `400`: the DSN didn't match
+  - `404`: `VITE_SENTRY_DSN` isn't set for that environment
+  - `413`: the body was too large
+  - `502`: Sentry was unreachable
 - **Container logs** when running locally in Docker: `docker compose logs web` (see
   [Container](#4-container)).
 
