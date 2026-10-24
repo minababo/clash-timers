@@ -358,9 +358,19 @@ in `src/lib/monitoring/scrubEvent.ts`.
    build log for `[sentry-vite-plugin]` errors. A failed upload doesn't fail the build, and the
    `.map` files are deleted either way.
 
-**Check that reporting works:** open a preview deployment and click **Send test error** in the
-footer. The test button exists only in preview builds. A "Clash Timers test error (preview build)"
-issue should appear in Sentry with environment `preview`.
+**Check that reporting works:**
+
+1. Open a preview deployment **with privacy protections on**: Brave Shields up, or an ad blocker
+   enabled. Real users have these, and testing without them can hide a blocked setup (see the
+   [postmortem](docs/postmortems/2026-10-25-error-reports-blocked-by-browser-shields.md)).
+2. Open DevTools > Network, then click **Send test error** in the footer. The test button exists
+   only in preview builds.
+3. Check the request: `POST /monitoring` should return `200`. There should be no request to
+   `*.ingest.sentry.io` and no `ERR_BLOCKED_BY_CLIENT`.
+4. In Sentry, a "Clash Timers test error (preview build)" issue should appear with environment
+   `preview`.
+
+Repeat this after any change to monitoring, the tunnel or `vercel.json`.
 
 ### When a warning appears
 
@@ -476,4 +486,13 @@ Open the repo's **Security** tab on GitHub. **Dependabot alerts** lists known vu
 
 ## 10. Incident notes
 
-Postmortems will live in `docs/` (the folder doesn't exist yet).
+Postmortems are in [`docs/postmortems/`](docs/postmortems/). Start from
+[`TEMPLATE.md`](docs/postmortems/TEMPLATE.md), and name the file `YYYY-MM-DD-short-title.md`.
+
+**When to write one:**
+
+- production was down or broken for users
+- data was lost or exposed
+- a problem was caught before release that would have caused one of the above
+
+Keep it blameless and short.
