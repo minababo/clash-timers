@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getCategoryLabel, VILLAGE_LABELS } from './labels'
+import { formatLevel, getCategoryLabel, VILLAGE_LABELS } from './labels'
 
 describe('labels', () => {
   it('labels villages', () => {
@@ -14,5 +14,16 @@ describe('labels', () => {
     expect(getCategoryLabel('builder', 'building')).toBe('Builder')
     expect(getCategoryLabel('builder', 'hero')).toBe('Hero')
     expect(getCategoryLabel('builder', 'lab')).toBe('Star Laboratory')
+  })
+})
+
+describe('formatLevel', () => {
+  it('shows the current and next level while upgrading', () => {
+    expect(formatLevel(9, false)).toBe('Lv 9 → 10')
+    expect(formatLevel(1, false)).toBe('Lv 1 → 2')
+  })
+
+  it('shows the new level once ready', () => {
+    expect(formatLevel(9, true)).toBe('Lv 10')
   })
 })

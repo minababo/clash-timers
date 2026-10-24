@@ -26,3 +26,11 @@ export function getCategoryLabel(village: Village, category: UpgradeCategory): s
   // Builder Base has no Pet House; fall back to the home label if an export ever has one.
   return CATEGORY_LABELS[village][category] ?? HOME_CATEGORY_LABELS[category]
 }
+
+/**
+ * The export's `lvl` is the current level, so a running upgrade shows "Lv 9 → 10" and a finished
+ * one shows its new level, "Lv 10".
+ */
+export function formatLevel(level: number, isReady: boolean): string {
+  return isReady ? `Lv ${level + 1}` : `Lv ${level} → ${level + 1}`
+}

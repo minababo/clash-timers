@@ -51,8 +51,19 @@ describe('App', () => {
       expect(within(builder).getAllByRole('listitem')).toHaveLength(4)
 
       const [firstHome] = within(home).getAllByRole('listitem')
-      expect(firstHome).toHaveTextContent('#1000003 · Lv 15')
+      expect(firstHome).toHaveTextContent('Builder')
+      expect(firstHome).toHaveTextContent('Elixir Storage · Lv 15 → 16')
       expect(firstHome).toHaveTextContent('10h 29m')
+
+      const builderHero = within(builder)
+        .getAllByRole('listitem')
+        .find((row) => row.textContent?.includes('Battle Copter'))
+      expect(builderHero).toHaveTextContent('Hero')
+      expect(builderHero).toHaveTextContent('Battle Copter · Lv 28 → 29')
+
+      const summary = screen.getByRole('region', { name: 'Summary' })
+      expect(summary).toHaveTextContent('Elixir Storage · Lv 15 → 16')
+      expect(screen.queryByText(/^Unknown/)).not.toBeInTheDocument()
       expect(screen.getByText('Exported just now')).toBeInTheDocument()
 
       const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? 'null')
@@ -247,6 +258,10 @@ describe('App', () => {
         'listitem',
       )
       expect(firstHome).toHaveTextContent('Ready')
+      expect(firstHome).toHaveTextContent('Elixir Storage · Lv 16')
+      expect(firstHome).not.toHaveTextContent('→')
+      // The summary moves on to the next running upgrade (Frosty, pets 73000009, lvl 5).
+      expect(screen.getByRole('region', { name: 'Summary' })).toHaveTextContent('Frosty · Lv 5 → 6')
       expect(screen.getByText('Exported 10h 29m ago')).toBeInTheDocument()
       expect(screen.getByText('1 upgrade is ready')).toBeInTheDocument()
     })
