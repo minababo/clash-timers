@@ -2,7 +2,8 @@
 
 [![CI](https://github.com/minababo/clash-timers/actions/workflows/ci.yml/badge.svg?branch=dev)](https://github.com/minababo/clash-timers/actions/workflows/ci.yml?query=branch%3Adev)
 
-Operating and troubleshooting the app: see the [runbook](RUNBOOK.md).
+Operating and troubleshooting the app: see the [runbook](RUNBOOK.md). Incident write-ups are in
+[docs/postmortems/](docs/postmortems/).
 
 ## Continuous integration
 
