@@ -47,6 +47,7 @@ can save several villages and export running upgrades as calendar events.
 | `.nvmrc`                                   | Node major version (24), used by CI and `check.ps1`     |
 | `scripts/check.ps1`                        | Runs the CI checks locally                              |
 | `scripts/update-names.ps1`                 | Regenerates names and reports whether they changed      |
+| `vercel.json`                              | Vercel response headers and `index.html` fallback       |
 | `Dockerfile`                               | Image: Node build stage, unprivileged nginx serve stage |
 | `docker/nginx.conf`                        | nginx config: `/healthz`, caching, headers, fallback    |
 | `docker-compose.yml`                       | Local run: service `web` on port 8080                   |
@@ -218,7 +219,80 @@ upgrading in this export."
 
 ## 7. Deployment and rollback
 
-Not set up yet. Added in the deployment issue.
+Production URL: `<production URL>`
+
+### How it works
+
+- **Vercel Git integration.** Vercel builds the repo on its own; `vercel.json` only sets response
+  headers and the fallback to `index.html`. Vercel detects Vite, so there's no build command in it.
+- **Production is `main`.** Every merge to `main` creates a production deployment. To check or
+  change the branch: **Project Settings > Environments > Production > Branch Tracking**.
+- **Every other branch gets a preview.** Each push to any other branch, `dev` included, gets its
+  own preview deployment. Merging into `dev` never touches production.
+- **Version footer.** Each page shows `Version <short SHA>` at the bottom, with `(preview)` on
+  preview deployments. The values come from Vercel's `VERCEL_GIT_COMMIT_SHA` and `VERCEL_ENV`.
+  These are only available if **Project Settings > Environment Variables > "Enable access to System
+  Environment Variables"** is ticked; otherwise the footer shows `Version local`. Local and Docker
+  builds also show `local`.
+
+### Release procedure
+
+1. Open a PR from `dev` to `main` titled `release: <summary>`.
+2. Wait for the `checks` status and the Vercel preview deployment. Open the preview and check that
+   the footer says `(preview)`.
+3. Merge the PR. Vercel builds and deploys `main` to production.
+4. Verify the deploy (below).
+
+### Verify a deploy
+
+1. Open `<production URL>`.
+2. Check the footer: `Version <SHA>` must match the merge commit on `main` (`git log -1 origin/main`),
+   with no `(preview)`.
+3. Paste an export and check that villages, names and countdowns work.
+4. Check the caching headers, using the real file name from `index.html`:
+
+   ```sh
+   curl -sI <production URL>/ | grep -i cache-control
+   curl -sI <production URL>/assets/<file>.js | grep -i cache-control
+   ```
+
+   Expect `no-cache` for `/`, and `public, max-age=31536000, immutable` for `/assets/`.
+
+### Rollback
+
+**a) Instant Rollback (fastest, in Vercel):**
+
+1. On the project's overview page, click **Instant Rollback** on the Production Deployment tile.
+   Alternatively, in **Deployments**, use the **⋮** menu on a production deployment.
+2. Select the deployment to roll back to, click **Continue**, check the details, then click
+   **Confirm Rollback**. The switch is immediate.
+
+On the Hobby plan you can only roll back to the **immediately previous** production deployment.
+
+After a rollback, Vercel **turns off auto-assignment of production domains**. New merges to `main`
+still build, but they don't go live. To return to normal:
+
+1. On the project overview, click **Undo Rollback** on the Production Deployment tile.
+2. Select the deployment to promote, then click **Confirm**.
+
+Promoting a deployment turns automatic production deploys back on.
+
+**b) Revert on `main` (permanent fix):**
+
+1. Create a branch from `main` and revert the bad change. For a merged PR, revert its merge commit:
+
+   ```sh
+   git fetch origin
+   git checkout -b revert/<short-name> origin/main
+   git revert -m 1 <merge commit SHA>
+   git push -u origin revert/<short-name>
+   ```
+
+2. Open a PR into `main`, wait for `checks`, then merge. This deploys a new production build.
+3. If you used Instant Rollback first, click **Undo Rollback** and promote the new deployment.
+   Otherwise it doesn't go live.
+4. Bring the revert into `dev` too (e.g. a PR from `main` into `dev`), so the next release doesn't
+   bring the bad change back.
 
 ## 8. Monitoring and logs
 
