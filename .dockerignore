@@ -10,9 +10,14 @@
 !tsconfig.json
 !tsconfig.app.json
 !tsconfig.node.json
+!tsconfig.api.json
 !vite.config.ts
 !src/
 !public/
+# Type-checked by tsc -b (tsconfig.api.json)
+!api/
+# Imported by a type-checked test (src/lib/monitoring/tunnel.test.ts)
+!vercel.json
 
 # Serve stage
 !docker/nginx.conf

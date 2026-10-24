@@ -1,10 +1,9 @@
 import { useId, useState, type FormEvent } from 'react'
-import { parseVillageExport, type ParseResult, type VillageExport } from '../lib/parser'
+import { reportParseError } from '../lib/monitoring'
+import { parseVillageExport, type ParseErrorCode, type VillageExport } from '../lib/parser'
 import { PRIMARY_BUTTON, SECONDARY_BUTTON } from './buttonStyles'
 
-type ParseError = Extract<ParseResult, { ok: false }>['error']
-
-const ERROR_MESSAGES: Readonly<Record<ParseError, string>> = {
+const ERROR_MESSAGES: Readonly<Record<ParseErrorCode, string>> = {
   invalid_json:
     "That doesn't look like a village export. Copy it again from Clash and paste the whole thing.",
   not_village_export: 'This is valid JSON but not a Clash village export.',
@@ -44,6 +43,8 @@ export function PasteForm({ onLoad }: PasteFormProps) {
       onLoad(text, result.data)
     } else {
       setError(ERROR_MESSAGES[result.error])
+      // Only the code and length: the text itself contains the player's tag and village.
+      reportParseError(result.error, text.length)
     }
   }
 

@@ -114,6 +114,11 @@ docker compose down
 Saved villages are stored per address, so villages saved on the dev server (`localhost:5173`) won't
 appear on `localhost:8080`. See [RUNBOOK.md](RUNBOOK.md#4-container) for health checks and logs.
 
+## Privacy
+
+Saved villages stay in your browser. The deployed app reports errors to Sentry, but error reports
+contain no export data and no player tags.
+
 ## Credits
 
 Game data (upgrade names) comes from

@@ -23,3 +23,5 @@ export interface VillageExport {
 
 export type ParseResult =
   { ok: true; data: VillageExport } | { ok: false; error: 'invalid_json' | 'not_village_export' }
+
+export type ParseErrorCode = Extract<ParseResult, { ok: false }>['error']
