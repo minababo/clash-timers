@@ -102,10 +102,15 @@ and it caches layers in the GitHub Actions cache.
 1. Check out code
 2. Set up Node (version from `.nvmrc`, with the npm cache)
 3. Install dependencies (`npm ci`)
-4. Lint (`npm run lint`)
-5. Check formatting (`npm run format:check`)
-6. Test (`npm run test`)
-7. Build (`npm run build`)
+4. Audit production dependencies (`npm audit --omit=dev --audit-level=high`). This step blocks:
+   a high or critical advisory in a dependency that ships fails the job.
+5. Audit all dependencies (report only) (`npm audit --audit-level=high`). It includes dev tooling
+   and never blocks. If it finds something, the step shows as failed in the log but the job
+   continues.
+6. Lint (`npm run lint`)
+7. Check formatting (`npm run format:check`)
+8. Test (`npm run test`)
+9. Build (`npm run build`)
 
 GitHub also adds its own "Set up job", "Post ..." and "Complete job" steps.
 
@@ -132,11 +137,12 @@ calling the script directly:
 
 **Common causes:**
 
-| Failing step               | Likely cause                                        | Fix                                                             |
-| -------------------------- | --------------------------------------------------- | --------------------------------------------------------------- |
-| Check formatting           | A file isn't Prettier-formatted                     | `npm run format`, then commit                                   |
-| Install dependencies       | `package-lock.json` out of sync with `package.json` | `npm install`, then commit `package-lock.json`                  |
-| Any (only on your machine) | Local Node major differs from `.nvmrc`              | Switch Node versions. `npm run check` reports expected vs found |
+| Failing step                  | Likely cause                                        | Fix                                                             |
+| ----------------------------- | --------------------------------------------------- | --------------------------------------------------------------- |
+| Check formatting              | A file isn't Prettier-formatted                     | `npm run format`, then commit                                   |
+| Install dependencies          | `package-lock.json` out of sync with `package.json` | `npm install`, then commit `package-lock.json`                  |
+| Audit production dependencies | A high/critical advisory in a production dependency | See [Dependencies and security](#9-dependencies-and-security)   |
+| Any (only on your machine)    | Local Node major differs from `.nvmrc`              | Switch Node versions. `npm run check` reports expected vs found |
 
 ## 6. Troubleshooting
 
@@ -352,9 +358,19 @@ in `src/lib/monitoring/scrubEvent.ts`.
    build log for `[sentry-vite-plugin]` errors. A failed upload doesn't fail the build, and the
    `.map` files are deleted either way.
 
-**Check that reporting works:** open a preview deployment and click **Send test error** in the
-footer. The test button exists only in preview builds. A "Clash Timers test error (preview build)"
-issue should appear in Sentry with environment `preview`.
+**Check that reporting works:**
+
+1. Open a preview deployment **with privacy protections on**: Brave Shields up, or an ad blocker
+   enabled. Real users have these, and testing without them can hide a blocked setup (see the
+   [postmortem](docs/postmortems/2026-10-25-error-reports-blocked-by-browser-shields.md)).
+2. Open DevTools > Network, then click **Send test error** in the footer. The test button exists
+   only in preview builds.
+3. Check the request: `POST /monitoring` should return `200`. There should be no request to
+   `*.ingest.sentry.io` and no `ERR_BLOCKED_BY_CLIENT`.
+4. In Sentry, a "Clash Timers test error (preview build)" issue should appear with environment
+   `preview`.
+
+Repeat this after any change to monitoring, the tunnel or `vercel.json`.
 
 ### When a warning appears
 
@@ -374,9 +390,28 @@ issue should appear in Sentry with environment `preview`.
 
 ### Uptime monitoring
 
-- Monitor: `<uptime monitor>`
-- Checks: `<uptime monitor>`
-- Alerts go to: `<uptime monitor>`
+- **Monitor:** UptimeRobot (free plan), a keyword monitor named "Keyword on clash-timers.vercel.app".
+  Find it in the UptimeRobot dashboard under **Monitoring**.
+- **Checks:**
+  - every 5 minutes: `GET https://clash-timers.vercel.app`, following redirects
+  - **down** when the response isn't 2xx/3xx, takes over 30 seconds, or the HTML doesn't contain
+    `Clash Timers` (not case-sensitive)
+- **Alerts go to:** email to the repo owner, sent as soon as an incident starts, with no repeats.
+  SSL and domain expiry checks aren't enabled; they're not on the free plan.
+- **Limits:**
+  - The check reads the static `index.html` (its `<title>`). It doesn't run the JavaScript, so it
+    catches "site down" or "wrong page", not a broken app. Crashes show up in Sentry instead.
+  - The check runs from one location, so a short regional outage can be missed.
+
+**When a down alert arrives:**
+
+1. Open https://clash-timers.vercel.app and check whether it loads and shows the app.
+2. Check the latest production deployment in Vercel: did it build, and did it go out just before the
+   alert?
+3. If the latest release broke it, roll back first (see
+   [Deployment and rollback](#7-deployment-and-rollback)), then investigate.
+4. If nothing was deployed, check Vercel's status page. Then wait for UptimeRobot's recovery
+   email or the next successful check.
 
 ### Other logs
 
@@ -394,6 +429,70 @@ issue should appear in Sentry with environment `preview`.
 - **Container logs** when running locally in Docker: `docker compose logs web` (see
   [Container](#4-container)).
 
-## 9. Incident notes
+## 9. Dependencies and security
 
-Postmortems will live in `docs/` (the folder doesn't exist yet).
+### Dependabot
+
+`.github/dependabot.yml` checks for updates **weekly** (Mondays) and opens PRs against `dev`, like
+any other change:
+
+| Ecosystem      | What it updates                                        | PRs                                                                        | Commit prefix |
+| -------------- | ------------------------------------------------------ | -------------------------------------------------------------------------- | ------------- |
+| npm            | `package.json` / `package-lock.json`                   | Minor and patch grouped into one PR; each major on its own; at most 5 open | `chore(deps)` |
+| GitHub Actions | Action versions in `.github/workflows/`                | All grouped into one PR                                                    | `ci(deps)`    |
+| Docker         | Base images in `Dockerfile` (node, nginx-unprivileged) | One PR per image                                                           | `build(deps)` |
+
+All carry the `dependencies` label.
+
+**Security updates** are separate. When an alert has a fix, GitHub opens a PR against the default
+branch (`dev`). These PRs don't use the grouping, label or prefix settings above.
+
+**Handling a Dependabot PR:**
+
+1. **Majors:** read the changelog or release notes linked in the PR for breaking changes before
+   anything else.
+2. Let CI run. `checks` (including the production audit) must pass, and `docker` should too for
+   Docker updates.
+3. Open the Vercel preview and check the app: paste an export, open a village, check names and
+   countdowns.
+4. Merge into `dev`, then release to `main` as usual (see
+   [Release procedure](#release-procedure)).
+
+If CI fails on a Dependabot PR, fix it on that branch or close the PR and update by hand. Don't
+merge red.
+
+### When the production audit fails
+
+1. Reproduce locally: `npm audit --omit=dev`. It shows the package, the advisory and the fixed
+   version.
+2. Try `npm audit fix`. It only applies semver-compatible updates. **Never use `--force` without
+   checking what it changes first**, because it can install breaking major versions. Check with
+   `git diff package.json package-lock.json`.
+3. Or update the affected package yourself: `npm install <package>@<fixed version>`. For a
+   transitive dependency, update the direct dependency that pulls it in.
+4. If no fix exists yet:
+   - Write the decision in the PR: the advisory, why it does or doesn't affect this app, and when
+     to check again.
+   - Only use an npm `overrides` entry in `package.json` if the forced version is known to be
+     compatible, and run the full checks.
+5. **Never delete or weaken the audit step to get CI green.**
+
+`npm run check` runs the same production audit locally (the **Audit** step).
+
+### Where to see alerts
+
+Open the repo's **Security** tab on GitHub. **Dependabot alerts** lists known vulnerabilities in
+`dev`'s dependencies; it's the same data `npm audit` uses.
+
+## 10. Incident notes
+
+Postmortems are in [`docs/postmortems/`](docs/postmortems/). Start from
+[`TEMPLATE.md`](docs/postmortems/TEMPLATE.md), and name the file `YYYY-MM-DD-short-title.md`.
+
+**When to write one:**
+
+- production was down or broken for users
+- data was lost or exposed
+- a problem was caught before release that would have caused one of the above
+
+Keep it blameless and short.

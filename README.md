@@ -2,7 +2,8 @@
 
 [![CI](https://github.com/minababo/clash-timers/actions/workflows/ci.yml/badge.svg?branch=dev)](https://github.com/minababo/clash-timers/actions/workflows/ci.yml?query=branch%3Adev)
 
-Operating and troubleshooting the app: see the [runbook](RUNBOOK.md).
+Operating and troubleshooting the app: see the [runbook](RUNBOOK.md). Incident write-ups are in
+[docs/postmortems/](docs/postmortems/).
 
 ## Continuous integration
 
@@ -10,17 +11,22 @@ GitHub Actions runs [`.github/workflows/ci.yml`](.github/workflows/ci.yml) on ev
 and on every push to `dev` and `main`. It installs dependencies with `npm ci` on the Node version in
 [`.nvmrc`](.nvmrc), then runs each check as its own step, so a failure shows which one broke:
 
-1. Lint: `npm run lint` (ESLint)
-2. Check formatting: `npm run format:check` (Prettier)
-3. Test: `npm run test` (Vitest, single run)
-4. Build: `npm run build` (TypeScript check + production build)
+1. Audit: `npm audit --omit=dev --audit-level=high`. This fails the job on a high or critical
+   advisory in a production dependency. A second, report-only audit also covers dev dependencies
+   without blocking.
+2. Lint: `npm run lint` (ESLint)
+3. Check formatting: `npm run format:check` (Prettier)
+4. Test: `npm run test` (Vitest, single run)
+5. Build: `npm run build` (TypeScript check + production build)
 
-A newer push to the same PR or branch cancels the run in progress.
+A newer push to the same PR or branch cancels the run in progress. Dependabot opens weekly update
+PRs against `dev` (see [RUNBOOK.md](RUNBOOK.md#9-dependencies-and-security)).
 
 To run the same checks locally, use the Node version from `.nvmrc` (`nvm use` picks it up), then:
 
 ```sh
 npm ci
+npm audit --omit=dev --audit-level=high
 npm run lint
 npm run format:check
 npm run test
@@ -36,7 +42,8 @@ They can be run from any folder; they switch to the repo root and switch back af
 
 ### `scripts/check.ps1`: run the CI checks
 
-Mirrors the CI steps, in the same order: lint (`npm run lint`), format check
+Mirrors the CI steps, in the same order: production audit
+(`npm audit --omit=dev --audit-level=high`), lint (`npm run lint`), format check
 (`npm run format:check`), tests (`npm run test`) and build (`npm run build`). It shows each step's
 output, then prints a summary with PASS/FAIL/SKIPPED and the duration of each step.
 
