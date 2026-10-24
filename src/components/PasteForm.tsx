@@ -1,5 +1,6 @@
 import { useId, useState, type FormEvent } from 'react'
 import { parseVillageExport, type ParseResult, type VillageExport } from '../lib/parser'
+import { PRIMARY_BUTTON, SECONDARY_BUTTON } from './buttonStyles'
 
 type ParseError = Extract<ParseResult, { ok: false }>['error']
 
@@ -12,7 +13,8 @@ const ERROR_MESSAGES: Readonly<Record<ParseError, string>> = {
 const CLIPBOARD_FAILED = "Couldn't read your clipboard. Paste into the box above instead."
 
 interface PasteFormProps {
-  onLoad: (data: VillageExport) => void
+  /** Called with the pasted text once it parses as a village export. */
+  onLoad: (rawExport: string, data: VillageExport) => void
 }
 
 export function PasteForm({ onLoad }: PasteFormProps) {
@@ -39,7 +41,7 @@ export function PasteForm({ onLoad }: PasteFormProps) {
     event.preventDefault()
     const result = parseVillageExport(text)
     if (result.ok) {
-      onLoad(result.data)
+      onLoad(text, result.data)
     } else {
       setError(ERROR_MESSAGES[result.error])
     }
@@ -71,7 +73,7 @@ export function PasteForm({ onLoad }: PasteFormProps) {
           autoCapitalize="off"
           autoComplete="off"
           autoCorrect="off"
-          className="block w-full resize-y rounded-xl border border-slate-700 bg-slate-900 px-3 py-3 font-mono text-sm text-slate-100 placeholder:font-sans placeholder:text-slate-500 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-400/30"
+          className="block w-full resize-y rounded-xl border border-slate-700 bg-slate-900 px-3 py-3 font-mono text-base text-slate-100 sm:text-sm placeholder:font-sans placeholder:text-slate-500 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-400/30"
         />
       </div>
 
@@ -88,15 +90,11 @@ export function PasteForm({ onLoad }: PasteFormProps) {
         <button
           type="button"
           onClick={handlePasteFromClipboard}
-          className="min-h-12 flex-1 rounded-xl border border-slate-700 bg-slate-800 px-4 font-medium text-slate-100 hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400 active:bg-slate-700"
+          className={`${SECONDARY_BUTTON} flex-1`}
         >
           Paste from clipboard
         </button>
-        <button
-          type="submit"
-          disabled={!text.trim()}
-          className="min-h-12 flex-1 rounded-xl bg-amber-400 px-4 font-semibold text-slate-950 hover:bg-amber-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400 active:bg-amber-300 disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-500"
-        >
+        <button type="submit" disabled={!text.trim()} className={`${PRIMARY_BUTTON} flex-1`}>
           Load village
         </button>
       </div>

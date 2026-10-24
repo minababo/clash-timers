@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatDuration, secondsUntil } from './formatDuration'
+import { formatAgo, formatDuration, secondsUntil } from './formatDuration'
 
 describe('formatDuration', () => {
   it.each([
@@ -33,5 +33,16 @@ describe('secondsUntil', () => {
     expect(secondsUntil(10_000, 9_001)).toBe(1)
     expect(secondsUntil(10_000, 10_000)).toBe(0)
     expect(secondsUntil(10_000, 12_000)).toBe(-2)
+  })
+})
+
+describe('formatAgo', () => {
+  it('formats elapsed time with a prefix', () => {
+    expect(formatAgo('Updated', 0, 2 * 3_600_000 + 5 * 60_000)).toBe('Updated 2h 5m ago')
+  })
+
+  it('says "just now" within the first second or for a time in the future', () => {
+    expect(formatAgo('Exported', 1_000, 1_999)).toBe('Exported just now')
+    expect(formatAgo('Exported', 5_000, 1_000)).toBe('Exported just now')
   })
 })

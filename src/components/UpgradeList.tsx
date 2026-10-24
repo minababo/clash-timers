@@ -1,4 +1,5 @@
-import { getCategoryLabel, VILLAGE_LABELS } from '../lib/labels'
+import { formatLevel, getCategoryLabel, VILLAGE_LABELS } from '../lib/labels'
+import { getUpgradeName } from '../lib/names'
 import type { Upgrade, Village } from '../lib/parser'
 import { formatDuration, formatFinishTime, secondsUntil } from '../lib/time'
 
@@ -60,7 +61,7 @@ function UpgradeRow({ upgrade, now }: { upgrade: Upgrade; now: number }) {
           {getCategoryLabel(upgrade.village, upgrade.category)}
         </p>
         <p className="truncate text-sm text-slate-200">
-          #{upgrade.dataId} · Lv {upgrade.level}
+          {getUpgradeName(upgrade.dataId, upgrade.section)} · {formatLevel(upgrade.level, isReady)}
         </p>
       </div>
       <div className="shrink-0 text-right">
