@@ -2,6 +2,8 @@
 
 [![CI](https://github.com/minababo/clash-timers/actions/workflows/ci.yml/badge.svg?branch=dev)](https://github.com/minababo/clash-timers/actions/workflows/ci.yml?query=branch%3Adev)
 
+Operating and troubleshooting the app: see the [runbook](RUNBOOK.md).
+
 ## Continuous integration
 
 GitHub Actions runs [`.github/workflows/ci.yml`](.github/workflows/ci.yml) on every pull request
