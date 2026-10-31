@@ -1,6 +1,6 @@
 # Build stage: install dependencies and build the static site.
 # Node major matches .nvmrc.
-FROM node:24.22.1-alpine3.24 AS build
+FROM node:26.12.1-alpine3.24 AS build
 WORKDIR /app
 
 # Dependencies first, so this layer is reused until package files change.
